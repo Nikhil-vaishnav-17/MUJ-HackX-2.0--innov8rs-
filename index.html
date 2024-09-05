@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Disaster Reporting Tool</title>
+
+    <!-- Leaflet.js -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+
+    <!-- Local library -->
+    <link rel="stylesheet" type="text/css" href="styles.css">
+</head>
+<body>
+    <h1>Report a Disaster</h1>
+    <form action="submit_report.php" method="POST">
+        <label for="disaster_type">Disaster Type:</label>
+        <input type="text" id="disaster_type" name="disaster_type" required>
+
+        <label for="description">Description:</label>
+        <textarea id="description" name="description" required></textarea>
+
+        <!-- Leaflet Map Integration -->
+        <label for="location">Select Location on Map or Search:</label>
+        <div id="map"></div>
+        <input type="hidden" id="latitude" name="latitude">
+        <input type="hidden" id="longitude" name="longitude">
+
+        <button type="submit">Submit Report</button>
+        <button type="button" id="clearLocation">Clear Location</button>
+    </form>
+
+    <script>
+        var defaultLocation = [28.7041, 77.1025];
+        var map = L.map('map').setView(defaultLocation, 8); 
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        var geocoder = L.Control.Geocoder.nominatim();
+        L.Control.geocoder({
+            position: 'topleft',
+            geocoder: geocoder
+        }).addTo(map);
+
+        var marker = L.marker(defaultLocation, { draggable: true }).addTo(map);
+
+        function updateLatLng(lat, lng) {
+            document.getElementById('latitude').value = lat;
+            document.getElementById('longitude').value = lng;
+        }
+
+        marker.on('dragend', function(event) {
+            var position = marker.getLatLng();
+            updateLatLng(position.lat, position.lng);
+        });
+
+        // Use device location for initial pin placement
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function(position) {
+                var lat = position.coords.latitude;
+                var lng = position.coords.longitude;
+                map.setView([lat, lng], 13); 
+                marker.setLatLng([lat, lng]); 
+                updateLatLng(lat, lng);
+            });
+        } else {
+            updateLatLng(defaultLocation[0], defaultLocation[1]);
+        }
+
+        // Clear Location button functionality
+        document.getElementById('clearLocation').addEventListener('click', function() {
+            // Reset the map to the default or current location
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    var lat = position.coords.latitude;
+                    var lng = position.coords.longitude;
+                    map.setView([lat, lng], 13); 
+                    marker.setLatLng([lat, lng]);
+                    updateLatLng(lat, lng);
+                });
+            } else {
+                map.setView(defaultLocation, 8); 
+                marker.setLatLng(defaultLocation);
+                updateLatLng(defaultLocation[0], defaultLocation[1]);
+            }
+        });
+    </script>
+</body>
+</html>
